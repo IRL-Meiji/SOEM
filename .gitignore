@@ -4,3 +4,6 @@ install
 /doc/latex
 /doc/html
 tags
+
+.vscode
+*.code-workspace

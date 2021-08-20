@@ -17,7 +17,7 @@
 
 #define EC_TIMEOUTMON 500
 
-char IOmap[4096];
+char IOmap[4096]; // この変数と通信に使用するメモリのアドレスが対応する！
 OSAL_THREAD_HANDLE thread1;
 int expectedWKC;
 boolean needlf;
@@ -25,6 +25,9 @@ volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
 
+
+// ifname: interface_name（接続先）
+// 
 void simpletest(char *ifname)
 {
     int i, j, oloop, iloop, chk;
@@ -143,6 +146,8 @@ void simpletest(char *ifname)
     }
 }
 
+
+// 繰り返しおこなわれる関数
 OSAL_THREAD_FUNC ecatcheck( void *ptr )
 {
     int slave;
@@ -160,6 +165,8 @@ OSAL_THREAD_FUNC ecatcheck( void *ptr )
             /* one ore more slaves are not responding */
             ec_group[currentgroup].docheckstate = FALSE;
             ec_readstate();
+
+            // 各スレーブに対して処理を行う
             for (slave = 1; slave <= ec_slavecount; slave++)
             {
                if ((ec_slave[slave].group == currentgroup) && (ec_slave[slave].state != EC_STATE_OPERATIONAL))
