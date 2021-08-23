@@ -107,6 +107,8 @@ void simpletest(char *ifname)
                             printf(" %2.2x", *(ec_slave[0].inputs + j));
                         }
                         printf(" T:%"PRId64"\r",ec_DCtime);
+                        IOmap[0] = 0xFF;  //add data
+                        IOmap[1] = 0x00;
                         needlf = TRUE;
                     }
                     osal_usleep(5000);
