@@ -184,7 +184,7 @@ void eboxtest(char *ifname)
                   /* read DC difference register for slave 2 */
    //               ec_FPRD(ec_slave[1].configadr, ECT_REG_DCSYSDIFF, sizeof(DCdiff), &DCdiff, EC_TIMEOUTRET);
    //               if(DCdiff<0) { DCdiff = - (int32)((uint32)DCdiff & 0x7ffffff); }
-                  printf("PD cycle %5d DCtime %12lld Cnt:%3d Data: %6d %6d %6d %6d %6d %6d %6d %6d \n",
+                  printf("PD cycle %5d DCtime %12ld Cnt:%3d Data: %6d %6d %6d %6d %6d %6d %6d %6d \n",
                         cyclecount, ec_DCtime, in_EBOX->counter, in_EBOX->stream[0], in_EBOX->stream[1],
                          in_EBOX->stream[2], in_EBOX->stream[3], in_EBOX->stream[4], in_EBOX->stream[5],
                          in_EBOX->stream[98], in_EBOX->stream[99]);
