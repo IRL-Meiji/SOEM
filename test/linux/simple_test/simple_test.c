@@ -87,7 +87,21 @@ void simpletest(char *ifname)
             printf("Operational state reached for all slaves.\n");
             inOP = TRUE;
                 /* cyclic loop */
-            for(i = 1; i <= 10000; i++)
+
+            // show data for debug
+            printf("\r\n --- information of slaves begin ---\r\n");
+            for(int s=0; s<ec_slavecount; s++){
+               printf("- Slave %d : %s -\r\n", s, ec_slave[s].name);
+               printf("eep_id: %x\r\n", ec_slave[s].eep_id);
+               printf("Ibytes: %d\r\n", ec_slave[s].Ibytes);
+               printf("Obytes: %d\r\n", ec_slave[s].Obytes);
+               printf("group: %d\r\n", ec_slave[s].group);
+               printf("configure address: %d\r\n", ec_slave[s].configadr);
+               printf("\r\n");
+            }
+            printf(" --- information of slaves end ---\r\n\r\n");
+
+            for(i = 1; i <= 10; i++)
             {
                ec_send_processdata();
                wkc = ec_receive_processdata(EC_TIMEOUTRET);
@@ -97,7 +111,8 @@ void simpletest(char *ifname)
                         printf("Processdata cycle %4d, WKC %d , O:", i, wkc);
 
                         for(j = 0 ; j < oloop; j++)
-                        {
+                        {  
+                            // This is Digital-Output data
                             printf(" %2.2x", *(ec_slave[0].outputs + j));
                         }
 
@@ -107,8 +122,14 @@ void simpletest(char *ifname)
                             printf(" %2.2x", *(ec_slave[0].inputs + j));
                         }
                         printf(" T:%"PRId64"\r",ec_DCtime);
-                        IOmap[0] = 0xFF;  //add data
-                        IOmap[1] = 0x00;
+                        
+                        // change value of Digital Output Register of Slave 1
+                        IOmap[0] = 0xFA;
+                        IOmap[1] = 0xFC;
+
+                        // change value of Digital Output Register of Slave 2
+                        IOmap[2] = 0xAA;
+                        IOmap[3] = 0xBB;
                         needlf = TRUE;
                     }
                     osal_usleep(5000);
@@ -150,6 +171,7 @@ void simpletest(char *ifname)
 
 
 // 繰り返しおこなわれる関数
+// EtherCAT通信のエラー監視か？
 OSAL_THREAD_FUNC ecatcheck( void *ptr )
 {
     int slave;
