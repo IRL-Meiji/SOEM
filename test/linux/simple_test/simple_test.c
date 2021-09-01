@@ -101,7 +101,7 @@ void simpletest(char *ifname)
             }
             printf(" --- information of slaves end ---\r\n\r\n");
 
-            for(i = 1; i <= 10; i++)
+            for(i = 1; i <= 500; i++)
             {
                ec_send_processdata();
                wkc = ec_receive_processdata(EC_TIMEOUTRET);
