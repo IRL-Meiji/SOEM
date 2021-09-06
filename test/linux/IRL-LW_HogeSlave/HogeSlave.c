@@ -14,11 +14,10 @@
 #include <inttypes.h>
 
 #include "ethercat.h"
-#include "HogeSlave.h"
 
 #define EC_TIMEOUTMON 500
 
-char IOmap[4096]; // この変数と通信に使用するメモリのアドレスが対応する！
+char IOmap[4096];
 OSAL_THREAD_HANDLE thread1;
 int expectedWKC;
 boolean needlf;
@@ -26,9 +25,45 @@ volatile int wkc;
 boolean inOP;
 uint8 currentgroup = 0;
 
+/* Transmit appropriate number to Slave(AN-204) */
+uint32_t uint32_Output = 0x12345678; // uint32_Output[4byte: 0x0000 ~ 0x0003]
+uint16_t uint16_Output = 0xABCD;   // uint16_Output[2byte: 0x0004 ~ 0x0005]
+uint8_t uint8_Output = 0xEF;      // uint8_Output[1byte: 0x0006]
+
+
+// added this function
+void my_setup(void){
+   /* show data for debug */
+   printf("\r\n --- information of slaves begin ---\r\n");
+   for(int s=0; s<ec_slavecount; s++){
+      printf("- Slave %d : %s -\r\n", s, ec_slave[s].name);
+      printf("eep_id: %x\r\n", ec_slave[s].eep_id);
+      printf("Ibytes: %d\r\n", ec_slave[s].Ibytes);
+      printf("Obytes: %d\r\n", ec_slave[s].Obytes);
+      printf("group: %d\r\n", ec_slave[s].group);
+      printf("configure address: %d\r\n", ec_slave[s].configadr);
+      printf("\r\n");
+   }
+   printf(" --- information of slaves end ---\r\n\r\n");
+
+
+   // pack uint32_Output to IOmap
+   // 逆順になることに注意！(MSBが)
+   IOmap[0x0000] = (uint32_Output & 0xFF);
+   IOmap[0x0001] = ((uint32_Output >> 8) & 0xFF);
+   IOmap[0x0002] = ((uint32_Output >> 16) & 0xFF);
+   IOmap[0x0003] = ((uint32_Output >> 24) & 0xFF);
+   // pack uint16_Output to IOmap
+   IOmap[0x0004] = (uint16_Output & 0xFF);
+   IOmap[0x0005] = ((uint16_Output >> 8) & 0xFF);
+   // pack uint8_Output to IOmap
+   IOmap[0x0006] = uint8_Output;
+}
+
+
+
 
 // ifname: interface_name（接続先）
-// 
 void simpletest(char *ifname)
 {
     int i, j, oloop, iloop, chk;
@@ -87,56 +122,17 @@ void simpletest(char *ifname)
          {
             printf("Operational state reached for all slaves.\n");
             inOP = TRUE;
-                /* cyclic loop */
-
-            // show data for debug
-            printf("\r\n --- information of slaves begin ---\r\n");
-            for(int s=0; s<ec_slavecount; s++){
-               printf("- Slave %d : %s -\r\n", s, ec_slave[s].name);
-               printf("eep_id: %x\r\n", ec_slave[s].eep_id);
-               printf("Ibytes: %d\r\n", ec_slave[s].Ibytes);
-               printf("Obytes: %d\r\n", ec_slave[s].Obytes);
-               printf("group: %d\r\n", ec_slave[s].group);
-               printf("configure address: %d\r\n", ec_slave[s].configadr);
-               printf("\r\n");
-            }
-            printf(" --- information of slaves end ---\r\n\r\n");
-
-
-            // Insert the value of PDO
-            // double_Output
-            IOmap[0x0000] = 0x00;
-            IOmap[0x0001] = 0x01;
-            IOmap[0x0002] = 0x02;
-            IOmap[0x0003] = 0x03;
-            IOmap[0x0004] = 0x04;
-            IOmap[0x0005] = 0x05;
-            IOmap[0x0006] = 0x06;
-            IOmap[0x0007] = 0x07;
-            // uint32_Output
-            IOmap[0x0008] = 0x00;
-            IOmap[0x0009] = 0x01;
-            IOmap[0x000A] = 0x02;
-            IOmap[0x000B] = 0x03;
-            // float_Output
-            IOmap[0x000C] = 0x00;
-            IOmap[0x000D] = 0x01;
-            IOmap[0x000E] = 0x02;
-            IOmap[0x000F] = 0x03;
             
-            // uint16_Output
-            IOmap[0x0010] = 0x00;
-            IOmap[0x0011] = 0x01;
-            // uint8_Output
-            IOmap[0x0012] = 0xFF;
+            my_setup();
 
-
+            /* cyclic loop */
             for(;;)
             {
                int i = 0;
                ec_send_processdata();
                wkc = ec_receive_processdata(EC_TIMEOUTRET);
-               printf("wkc: %d, expected_wkc: %d\r\n", wkc, expectedWKC);
+               printf("Uint32: %d, Uint16: %d, Uint8: %d\r", uint32_Output, uint16_Output, uint8_Output);
+               //printf("wkc: %d, expected_wkc: %d\r", wkc, expectedWKC);
                     if(wkc >= expectedWKC)
                     {
                         printf("Processdata cycle %4d, WKC %d , O:", i++, wkc);
