@@ -1,0 +1,3 @@
+# GoldTwitter_transmit.c
+PDO_transmit.cと同じ方法でGold TwitterにPDO通信でデータを送信してみた
+しかし、エンコーダの読み取りに失敗
