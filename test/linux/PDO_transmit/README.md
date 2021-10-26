@@ -1,2 +1,2 @@
 # PDO_transmit.c
-EtherCATシールド評価基盤を使ってPDO通信をした時のプログラム
+EtherCATシールド評価基盤を用いて、PDO通信でデータをNUCLEOに送信した時のプログラム
