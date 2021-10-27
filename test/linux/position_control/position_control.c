@@ -276,22 +276,36 @@ void simpletest(char *ifname)
 
                 /* time declaration */
                 struct timeval now;
+                //struct timespec, now;
+                 
+                /* get time */
+                uint32 ms_offset, us_offset, us_time;
+                gettimeofday(&now, NULL);
+                ms_offset = now.tv_sec;
+                us_offset = now.tv_usec;
+
+               // clock_gettime(CLOCK_MONOTONIC, &now);
 
                 for(i = 1; i <= 10000; i++) 
                 //for(;;)
                 {
+
                     /** PDO I/O refresh */
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
                     if(wkc >= expectedWKC) {
-                        /* get time */
                         gettimeofday(&now, NULL);
-                        printf("Processdata cycle %4d, WKC %d, now %ld%6luμs\n", i, wkc, now.tv_sec, now.tv_usec);
+                        if(now.tv_usec < us_offset)
+                            us_time = now.tv_usec - us_offset + 100000;
+                        else
+                            us_time = now.tv_usec - us_offset;
+
+                        printf("Processdata cycle %4d, WKC %d, now %ld%06uμs\n", i, wkc, now.tv_sec - ms_offset, us_time);
 
                         /* 最初だけslaveinfoの入出力を順番通り表示させたら、表示もマッピングに対応する（表示させたくないものを消せる） */
                         printf("pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
                         //printf("actual value => pos: %8d, vel: %8d, stat: 0x%x\n", val->position, val->velocity, val->status);
-                        fprintf(fp, "%d,%d,%ld%6lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
+                        fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
                         i++;
 
                         /** if in fault or in the way to normal status, we update the state machine */
@@ -334,6 +348,9 @@ void simpletest(char *ifname)
 
                         printf("\r");
                         needlf = TRUE;
+
+                        //end = std::chrono::system_clock::now(); // 時間計測終了
+                        //double = elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
                     }
                     usleep(timestep);
