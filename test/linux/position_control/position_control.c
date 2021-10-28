@@ -185,7 +185,7 @@ void simpletest(char *ifname)
             printf("Slaves mapped, state to SAFE_OP.\n");
 
             // 制御周期, 1ms
-            int timestep = 500;
+            int timestep = 1000;
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -272,19 +272,16 @@ void simpletest(char *ifname)
 
                 /* make csv file */
                 FILE *fp = fopen("test1.csv", "w");
-                fprintf(fp, "pos[count],vel[count/s],time[μm]\n");
+                fprintf(fp, "pos[count],tor,time[μs]\n");
 
                 /* time declaration */
                 struct timeval now;
                 //struct timespec, now;
                  
                 /* get time */
-                uint32 ms_offset, us_offset, us_time;
                 gettimeofday(&now, NULL);
-                ms_offset = now.tv_sec;
-                us_offset = now.tv_usec;
 
-               // clock_gettime(CLOCK_MONOTONIC, &now);
+               //clock_gettime(CLOCK_MONOTONIC, &now);
 
                 for(i = 1; i <= 10000; i++) 
                 //for(;;)
@@ -295,16 +292,17 @@ void simpletest(char *ifname)
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
                     if(wkc >= expectedWKC) {
                         gettimeofday(&now, NULL);
-                        if(now.tv_usec < us_offset)
-                            us_time = now.tv_usec - us_offset + 100000;
-                        else
-                            us_time = now.tv_usec - us_offset;
 
-                        printf("Processdata cycle %4d, WKC %d, now %ld%06uμs\n", i, wkc, now.tv_sec - ms_offset, us_time);
+                        /* show time */
+                        printf("Processdata cycle %4d, WKC %d, now %ld%06luμs\n", i, wkc, now.tv_sec, now.tv_usec);
 
                         /* 最初だけslaveinfoの入出力を順番通り表示させたら、表示もマッピングに対応する（表示させたくないものを消せる） */
-                        printf("pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
+                        // torque version
+                        printf("actual value => pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
+                        // velocity version
                         //printf("actual value => pos: %8d, vel: %8d, stat: 0x%x\n", val->position, val->velocity, val->status);
+
+                        /* write csv file */
                         fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
                         i++;
 
@@ -342,15 +340,13 @@ void simpletest(char *ifname)
                             //target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));
                         }
 
-
-                        //printf("target value => pos: %5d, vel: %5d, tor: %5d, max_tor: %5d, control: 0x%x\n\n", target->position, target->velocity, target->torque, target->max_torque, target->status);
                         printf("target value => tor: %5d, control: 0x%x\n\n", target->torque, target->status);
+                        /* pos,vel version */
+                        //printf("target value => pos: %5d, vel: %5d, tor: %5d, max_tor: %5d, control: 0x%x\n\n", target->position, target->velocity, target->torque, target->max_torque, target->status);
+                        
 
                         printf("\r");
                         needlf = TRUE;
-
-                        //end = std::chrono::system_clock::now(); // 時間計測終了
-                        //double = elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
 
                     }
                     usleep(timestep);
