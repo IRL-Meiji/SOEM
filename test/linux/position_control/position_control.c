@@ -276,14 +276,8 @@ void simpletest(char *ifname)
 
                 /* time declaration */
                 struct timeval now;
-                //struct timespec, now;
-                 
-                /* get time */
-                gettimeofday(&now, NULL);
 
-               //clock_gettime(CLOCK_MONOTONIC, &now);
-
-                for(i = 1; i <= 10000; i++) 
+                for(i = 1; i <= 20000; i++) 
                 //for(;;)
                 {
 
@@ -291,7 +285,7 @@ void simpletest(char *ifname)
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
                     if(wkc >= expectedWKC) {
-                        gettimeofday(&now, NULL);
+                        gettimeofday(&now, NULL); // get time
 
                         /* show time */
                         printf("Processdata cycle %4d, WKC %d, now %ld%06luμs\n", i, wkc, now.tv_sec, now.tv_usec);
