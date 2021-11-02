@@ -49,10 +49,17 @@ struct Output {
 
 struct Input {
     int32 position;
+    int32 vel_demand;
+    int16 tor_demand;
+    uint16 status;
+};
+
+/*struct Input {
+    int32 position;
     int16 torque;
     uint16 status;
     int8 profile;
-};
+};*/
 
 /*struct Input {
     int32 position;
@@ -84,6 +91,13 @@ struct Input {
 {   \
     ec_readstate();\
     printf("EC> \"%s\" %x - %x [%s] \n", (char*)ec_elist2string(), ec_slave[slaveId].state, ec_slave[slaveId].ALstatuscode, (char*)ec_ALstatuscode2string(ec_slave[slaveId].ALstatuscode));    \
+}
+
+#define PI 3.14159265359
+
+/* DA変換 */
+float uint_to_float(int d){
+    return (d*2*PI)/2000;    
 }
 
 
@@ -153,6 +167,9 @@ void simpletest(char *ifname)
                 //ec_SDOwrite(i, 0x1c13, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
 
                 os=sizeof(ob2); ob2 = 0x1a020001; // position,torque
+                //ec_SDOwrite(i, 0x1c13, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
+
+                os=sizeof(ob2); ob2 = 0x1a010001; // demand
                 ec_SDOwrite(i, 0x1c13, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
                 
                 READ(i, 0x1c12, 0, buf32, "rxPDO:0");
@@ -271,19 +288,20 @@ void simpletest(char *ifname)
                 int i = 0;
 
                 /* make csv file */
-                FILE *fp = fopen("test1.csv", "w");
-                fprintf(fp, "pos[count],tor,time[μs]\n");
+                FILE *fp1 = fopen("send.csv", "w");
+                fprintf(fp1, "tor,time[μs]\n");
+
+                FILE *fp2 = fopen("receive.csv", "w");
+                fprintf(fp2, "tor_demand, time[μm]\n");
 
                 /* time declaration */
                 struct timeval now;
-                //struct timespec, now;
-                 
-                /* get time */
-                gettimeofday(&now, NULL);
 
-               //clock_gettime(CLOCK_MONOTONIC, &now);
+                target->torque = 0;
 
-                for(i = 1; i <= 10000; i++) 
+                usleep(1000000);
+
+                for(i = 1; i <= 5000; i++) 
                 //for(;;)
                 {
 
@@ -291,20 +309,26 @@ void simpletest(char *ifname)
                     ec_send_processdata();
                     wkc = ec_receive_processdata(EC_TIMEOUTRET);
                     if(wkc >= expectedWKC) {
-                        gettimeofday(&now, NULL);
 
                         /* show time */
-                        printf("Processdata cycle %4d, WKC %d, now %ld%06luμs\n", i, wkc, now.tv_sec, now.tv_usec);
+                        printf("Processdata cycle %4d, WKC %d\n", i, wkc);
+
+                        /* get receive time */
+                        gettimeofday(&now, NULL);
 
                         /* 最初だけslaveinfoの入出力を順番通り表示させたら、表示もマッピングに対応する（表示させたくないものを消せる） */
-                        // torque version
-                        printf("actual value => pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
-                        // velocity version
-                        //printf("actual value => pos: %8d, vel: %8d, stat: 0x%x\n", val->position, val->velocity, val->status);
+                        /* torque version */
+                        //printf("actual value => pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
 
-                        /* write csv file */
-                        fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
-                        i++;
+                        /* velocity version */
+                        //printf("actual value => pos: %8d, vel: %8d, stat: 0x%x\n", val->position, val->velocity, val->status);
+                        /* demand version */
+                        float p = uint_to_float(val->position);
+                        printf("actual value => pos: %8f, v_demand: %8d, t_demand: %8d, stat: 0x%x, receive time: %ld%06luμs\n", p, val->vel_demand, val->tor_demand, val->status, now.tv_sec, now.tv_usec);
+
+                        /* write receive.csv */
+                        //fprintf(fp2, "%d,%ld%06lu,\n",val->torque, now.tv_sec, now.tv_usec);
+                        fprintf(fp2, "%d,%ld%06lu,\n",val->tor_demand, now.tv_sec, now.tv_usec);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -334,13 +358,25 @@ void simpletest(char *ifname)
                             reachedInitial = 1;
                         }
                         
-                        
+        
+                        /* set target value */
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
+                            /* get send time */
+                            gettimeofday(&now, NULL);
+
+                            if(target->torque < 80)
+                            target->torque = (int16) i*1;
+
+                            else
                             target->torque = (int16) 80;
                             //target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));
                         }
 
-                        printf("target value => tor: %5d, control: 0x%x\n\n", target->torque, target->status);
+                        printf("target value => tor: %5d, control: 0x%x, send time: %ld%06luμs\n\n", target->torque, target->status, now.tv_sec, now.tv_usec);
+                        /* write send.csv */
+                        fprintf(fp1, "%d,%ld%06lu,\n", target->torque, now.tv_sec, now.tv_usec);
+
+
                         /* pos,vel version */
                         //printf("target value => pos: %5d, vel: %5d, tor: %5d, max_tor: %5d, control: 0x%x\n\n", target->position, target->velocity, target->torque, target->max_torque, target->status);
                         
@@ -352,7 +388,8 @@ void simpletest(char *ifname)
                     usleep(timestep);
                 }
                 inOP = FALSE;
-                fclose(fp);
+                fclose(fp1);
+                fclose(fp2);
             }
             else
             {
