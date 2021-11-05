@@ -6,7 +6,7 @@ install(TARGETS read_motor DESTINATION bin)
 
 # position_control
 add_executable(position_control position_control.c)
-target_link_libraries(position_control soem)
+target_link_libraries(position_control soem m)
 install(TARGETS position_control DESTINATION bin)
 
 
