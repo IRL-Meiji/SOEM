@@ -22,12 +22,12 @@
 // PDO data capacity
 char IOmap[4096];
 
-float kp = 10.0;
-float kd = 0.2;
+/* G-TWI 6/100EE */
+float kp = 12.0;
+float kd = 0.1;
 float t_pos = 0;
 float t_vel = 0;
-
-float A = 250.0; //振幅
+float A = 250.0; //振幅、90°
 float T = 2.0; //周期
 
 pthread_t thread1;
@@ -90,7 +90,10 @@ struct Input {
     printf("EC> \"%s\" %x - %x [%s] \n", (char*)ec_elist2string(), ec_slave[slaveId].state, ec_slave[slaveId].ALstatuscode, (char*)ec_ALstatuscode2string(ec_slave[slaveId].ALstatuscode));    \
 }
 
-
+/* DA変換 */
+float DA(int d){
+    return ((float)d*2*PI)/2000;
+}
 
 void simpletest(char *ifname)
 {
@@ -274,20 +277,24 @@ void simpletest(char *ifname)
                 val = (struct Input *)(ec_slave[1].inputs);
 
                 /* make csv file */
-                FILE *fp = fopen("PD_control.csv", "w");
-                fprintf(fp, "pos,vel,time[μs]\n");
+                FILE *fp1 = fopen("PD_receive.csv", "w");
+                fprintf(fp1, "pos,vel,time[μs]\n");
+
+                FILE *fp2 = fopen("PD_send.csv", "w");
+                fprintf(fp2, "pos,vel,time[μs]\n");
 
                 /* time declaration */
                 struct timeval now;
-                gettimeofday(&now, NULL);
-                int32 time_offset = now.tv_sec;
-                int32 current_time;
+                //gettimeofday(&now, NULL);
+                //int32 time_offset = now.tv_sec;
+                //int32 current_time;
 
                 int i = 0;
+                int j = 0;
                 float w = 2*PI/T; //角速度
 
-                //for(i = 1; i <= 10000; i++) 
-                for(;;)
+                for(i = 1; i <= 5000; i++) 
+                //for(;;)
                 {
 
                     /** PDO I/O refresh */
@@ -296,12 +303,12 @@ void simpletest(char *ifname)
                     if(wkc >= expectedWKC) {
                         gettimeofday(&now, NULL); // get time
 
-                        current_time = now.tv_sec - time_offset;
+                        //current_time = now.tv_sec - time_offset;
 
-                        printf("current_time: %d\n", current_time);
+                        //printf("current_time: %d\n", current_time);
 
                         /* show time */
-                        printf("Processdata cycle %4d, WKC %d, now %ld%06luμs\n", i, wkc, now.tv_sec, now.tv_usec);
+                        printf("Processdata cycle %4d, WKC %d\n", i, wkc);
 
                         /* 最初だけslaveinfoの入出力を順番通り表示させたら、表示もマッピングに対応する（表示させたくないものを消せる） */
                         /* torque version */
@@ -310,7 +317,12 @@ void simpletest(char *ifname)
                         printf("actual value => pos: %8d, digital %8d, vel: %8d, stat: 0x%x\n", val->position, val->digital, val->velocity, val->status);
 
                         /* write csv file */
-                        fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->velocity, now.tv_sec, now.tv_usec);
+                        /* save digital value */
+                        //fprintf(fp1, "%d,%d,%ld%06lu,\n", val->position, val->velocity, now.tv_sec, now.tv_usec);
+                        /* save digital value */
+                        float p = DA(val->position);
+                        float v = DA(val->velocity);
+                        fprintf(fp1, "%f,%f,%ld%06lu,\n", p, v, now.tv_sec, now.tv_usec);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -343,20 +355,27 @@ void simpletest(char *ifname)
                         
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
 
+                            gettimeofday(&now, NULL); // get time
                             /* PD control (current_timeが秒単位) */
                             /*t_pos = A-A*cos(w*current_time);
                             t_vel = w*A*sin(w*current_time);
                             target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));*/
 
                             /* PD control (平均のループ時間をマイクロ秒単位でcurrent_timeに加算) */
-                            i = i + 1300;
-                            t_pos = A-A*cos(w*i*0.000001);
-                            t_vel = w*A*sin(w*i*0.000001);
+                            j = j + 1300;
+                            t_pos = A-A*cos(w*j*0.000001);
+                            t_vel = w*A*sin(w*j*0.000001);
                             target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));
 
                         }
 
                         printf("target value => tor: %5d, control: 0x%x\n\n", target->torque, target->status);
+                        
+                        /* save digital value */
+                        //fprintf(fp2, "%f,%f,%d06lu,\n", t_pos, t_vel, now.tv_sec, now.tv_usec);
+                        float tp = DA(t_pos);
+                        float tv = DA(t_vel);
+                        fprintf(fp2, "%f,%f,%ld%06lu,\n", tp, tv, now.tv_sec, now.tv_usec);
                         
                         printf("\r");
                         needlf = TRUE;
@@ -365,7 +384,8 @@ void simpletest(char *ifname)
                     usleep(timestep);
                 }
                 inOP = FALSE;
-                fclose(fp);
+                fclose(fp1);
+                fclose(fp2);
             }
             else
             {

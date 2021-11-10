@@ -69,7 +69,6 @@ struct Input {
 }
 
 
-
 void simpletest(char *ifname)
 {
     int i, oloop, iloop, chk;
@@ -253,7 +252,7 @@ void simpletest(char *ifname)
                 /* time declaration */
                 struct timeval now;
 
-                for(i = 1; i <= 20000; i++) 
+                for(i = 1; i <= 10000; i++) 
                 //for(;;)
                 {
 
@@ -304,7 +303,7 @@ void simpletest(char *ifname)
                         
                         
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
-                            target->torque = (int16) 80;
+                            target->torque = (int16) 80; //G-TWI 6/100EE
                         }
 
                         printf("target value => tor: %5d, control: 0x%x\n\n", target->torque, target->status);

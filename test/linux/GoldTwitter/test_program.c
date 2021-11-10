@@ -21,11 +21,6 @@
 // PDO data capacity
 char IOmap[4096];
 
-float kp = 5.0;
-float kd = 0.07;
-int32 t_pos = 500;
-int32 t_vel = 0; 
-
 pthread_t thread1;
 int expectedWKC;
 boolean needlf;
@@ -292,16 +287,15 @@ void simpletest(char *ifname)
                 fprintf(fp1, "tor,time[μs]\n");
 
                 FILE *fp2 = fopen("receive.csv", "w");
-                fprintf(fp2, "tor_demand, time[μm]\n");
+                fprintf(fp2, "tor_demand, time[μs]\n");
 
                 /* time declaration */
                 struct timeval now;
 
                 target->torque = 0;
 
-                usleep(1000000);
 
-                for(i = 1; i <= 5000; i++) 
+                for(i = 1; i <= 3000; i++) 
                 //for(;;)
                 {
 
@@ -358,14 +352,15 @@ void simpletest(char *ifname)
                             reachedInitial = 1;
                         }
                         
-        
+                        // G-TWI 6/100EE
+                        
                         /* set target value */
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
                             /* get send time */
                             gettimeofday(&now, NULL);
-
+                            
                             if(target->torque < 80)
-                            target->torque = (int16) i*1;
+                            target->torque = (int16) (i-11)*1 ; // 11回ループが回ってから指令が送信される
 
                             else
                             target->torque = (int16) 80;

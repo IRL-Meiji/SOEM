@@ -150,6 +150,7 @@ void simpletest(char *ifname)
 
             printf("Slaves mapped, state to SAFE_OP.\n");
 
+            /* 制御周期(μs) */
             int timestep = 700;
 
             /* wait for all slaves to reach SAFE_OP state */
@@ -239,8 +240,8 @@ void simpletest(char *ifname)
                 val2 = (struct TorqueIn *)(ec_slave[2].inputs);
 
                 int i = 0;
-
-                for(i = 1; i <= 4000; i++) 
+                for(;;)
+                //for(i = 1; i <= 4000; i++) 
                 {
                     /** PDO I/O refresh */
                     ec_send_processdata();
@@ -248,8 +249,8 @@ void simpletest(char *ifname)
 
                     if(wkc >= expectedWKC) {
                         printf("Processdata cycle %4d, WKC %d\n", i, wkc);
-                        printf("  pos: 0x%x, tor: 0x%x, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
-                        printf("  pos: 0x%x, tor: 0x%x, stat: 0x%x, mode: 0x%x\n\n", val2->position, val2->torque, val2->status, val2->profile);
+                        printf("  pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
+                        printf("  pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val2->position, val2->torque, val2->status, val2->profile);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -268,7 +269,7 @@ void simpletest(char *ifname)
                             break;
                         default:
                             if(val->status >> 3 & 0x01) {
-                                READ(1, 0x1001, 0, buf8, "Error");
+                                //READ(1, 0x1001, 0, buf8, "Error");
                                 target->status = 128;
                             }
                         }
@@ -289,7 +290,7 @@ void simpletest(char *ifname)
                             break;
                         default:
                             if(val2->status >> 3 & 0x01) {
-                                READ(2, 0x1001, 0, buf8, "Error");
+                                //READ(2, 0x1001, 0, buf8, "Error");
                                 target2->status = 128;
                             }
                         }
@@ -305,14 +306,15 @@ void simpletest(char *ifname)
                         }
 
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
-                            target->torque = (int16) 0;
+                            target->torque = (int16) 30; //G-TWI 25/100EE
                         }
 
                         if((val2->status & 0x0fff) == 0x0237 && reachedInitial2){
-                            target2->torque = (int16) 0;
+                            target2->torque = (int16) 80; //G-TWI 6/100EE
                         }
 
-                        //printf("  Target: 0x%x, control: 0x%x", target->torque, target->status);
+                        printf("  Target: %8d, control: 0x%x\n", target->torque, target->status);
+                        printf("  Target: %8d, control: 0x%x\n\n", target2->torque, target2->status);
 
                         printf("\r");
                         needlf = TRUE;
