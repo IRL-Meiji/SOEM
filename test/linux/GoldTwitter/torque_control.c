@@ -160,7 +160,7 @@ void simpletest(char *ifname)
             printf("Slaves mapped, state to SAFE_OP.\n");
 
             // 制御周期, 1ms
-            int timestep = 1000;
+            int timestep = 500;
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -246,15 +246,18 @@ void simpletest(char *ifname)
                 int i = 0;
 
                 /* make csv file */
-                FILE *fp = fopen("torque.csv", "w");
+                /*FILE *fp = fopen("torque.csv", "w");
                 fprintf(fp, "pos[count],tor,time[μs]\n");
+                FILE *fp2 = fopen("t_tor.csv", "w");
+                fprintf(fp2, "tor,time[μs]\n");*/
 
                 /* time declaration */
                 struct timeval now;
 
-                for(i = 1; i <= 10000; i++) 
-                //for(;;)
+                //for(i = 1; i <= 5000; i++) 
+                for(;;)
                 {
+                    i++;
 
                     /** PDO I/O refresh */
                     ec_send_processdata();
@@ -270,8 +273,7 @@ void simpletest(char *ifname)
                         printf("actual value => pos: %8d, tor: %8d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
 
                         /* write csv file */
-                        fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
-                        i++;
+                        //fprintf(fp, "%d,%d,%ld%06lu,\n", val->position, val->torque, now.tv_sec, now.tv_usec);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -303,10 +305,24 @@ void simpletest(char *ifname)
                         
                         
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
-                            target->torque = (int16) 80; //G-TWI 6/100EE
+                            /*if(i<150)
+                                target->torque = (int16) 50;
+                            else    
+                                target->torque = (int16) 30; //G-TWI 6/100EE*/
+
+                            //gettimeofday(&now, NULL);
+
+                            if(target->torque < 800)
+                            target->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
+
+                            //else
+                            target->torque = (int16) 800;
+
+
                         }
 
                         printf("target value => tor: %5d, control: 0x%x\n\n", target->torque, target->status);
+                        //fprintf(fp2, "%d,%ld%06lu,\n", target->torque, now.tv_sec, now.tv_usec);
                         
 
                         printf("\r");
@@ -316,7 +332,8 @@ void simpletest(char *ifname)
                     usleep(timestep);
                 }
                 inOP = FALSE;
-                fclose(fp);
+                //fclose(fp);
+                //fclose(fp2);
             }
             else
             {

@@ -197,7 +197,7 @@ void simpletest(char *ifname)
             printf("Slaves mapped, state to SAFE_OP.\n");
 
             // 制御周期, 1ms
-            int timestep = 1000;
+            int timestep = 400;
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -295,7 +295,7 @@ void simpletest(char *ifname)
                 target->torque = 0;
 
 
-                for(i = 1; i <= 3000; i++) 
+                for(i = 1; i <= 2000; i++) 
                 //for(;;)
                 {
 
@@ -360,7 +360,7 @@ void simpletest(char *ifname)
                             gettimeofday(&now, NULL);
                             
                             if(target->torque < 80)
-                            target->torque = (int16) (i-11)*1 ; // 11回ループが回ってから指令が送信される
+                            target->torque = (int16) (i-13)*1 ; // 11回ループが回ってから指令が送信される
 
                             else
                             target->torque = (int16) 80;

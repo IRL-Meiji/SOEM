@@ -37,6 +37,13 @@ struct TorqueIn {
     int8 profile;
 };
 
+/*struct TorqueIn {
+    int32 position;
+    int32 vel_demand;
+    int16 tor_demand;
+    uint16 status;
+};*/
+
 /**
  * helper macros
  */
@@ -121,6 +128,8 @@ void simpletest(char *ifname)
                 ec_SDOwrite(i, 0x1c12, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
                 os=sizeof(ob2); ob2 = 0x1a020001;
                 ec_SDOwrite(i, 0x1c13, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
+                //os=sizeof(ob2); ob2 = 0x1a010001; // demand
+               //ec_SDOwrite(i, 0x1c13, 0, TRUE, os, &ob2, EC_TIMEOUTRXM);
 
                 READ(i, 0x1c12, 0, buf32, "rxPDO:0");
                 READ(i, 0x1c13, 0, buf32, "txPDO:0");
@@ -151,7 +160,7 @@ void simpletest(char *ifname)
             printf("Slaves mapped, state to SAFE_OP.\n");
 
             /* 制御周期(μs) */
-            int timestep = 700;
+            int timestep = 500;
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -239,9 +248,25 @@ void simpletest(char *ifname)
                 target2 = (struct TorqueOut *)(ec_slave[2].outputs);
                 val2 = (struct TorqueIn *)(ec_slave[2].inputs);
 
+                /* make csv file */
+                //FILE *fp1 = fopen("motor1_send.csv", "w");
+                //fprintf(fp1, "torque,time[μs]\n");
+
+                //FILE *fp2 = fopen("motor1_receive.csv", "w");
+                //fprintf(fp2, "torque,time[μs]\n");
+                
+                //FILE *fp3 = fopen("motor2_send.csv", "w");
+                //fprintf(fp3, "torque,time[μs]\n");
+
+                //FILE *fp4 = fopen("motor2_receive.csv", "w");
+                //printf(fp4, "torque,time[μs]\n");
+
+                /* time declaration */
+                //struct timeval now;
+
                 int i = 0;
-                for(;;)
-                //for(i = 1; i <= 4000; i++) 
+                //for(;;)
+                for(i = 1; i <= 20000; i++) 
                 {
                     /** PDO I/O refresh */
                     ec_send_processdata();
@@ -249,8 +274,15 @@ void simpletest(char *ifname)
 
                     if(wkc >= expectedWKC) {
                         printf("Processdata cycle %4d, WKC %d\n", i, wkc);
-                        printf("  pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
-                        printf("  pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val2->position, val2->torque, val2->status, val2->profile);
+                        //gettimeofday(&now, NULL);
+                       //printf(" actual value1 => pos: %8d, v_demand: %8d, t_demand: %8d, stat: 0x%x\n", val->position, val->vel_demand, val->tor_demand, val->status);
+                        printf("  motor1, pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val->position, val->torque, val->status, val->profile);
+                        //fprintf(fp2, "%d,%ld%06lu,\n", val->tor_demand, now.tv_sec, now.tv_usec);
+                        
+                        //gettimeofday(&now, NULL);
+                        //printf(" actual value2 => pos: %8d, v_demand: %8d, t_demand: %8d, stat: 0x%x\n", val2->position, val2->vel_demand, val2->tor_demand, val2->status);
+                        printf(" motor2, pos: %8d, tor: %5d, stat: 0x%x, mode: 0x%x\n", val2->position, val2->torque, val2->status, val2->profile);
+                        //fprintf(fp4, "%d,%ld%06lu,\n", val2->tor_demand, now.tv_sec, now.tv_usec);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -275,6 +307,7 @@ void simpletest(char *ifname)
                         }
 
                         // Slave 2
+                        
                         switch(target2->status){
                         case 0:
                             target2->status = 6;
@@ -306,15 +339,29 @@ void simpletest(char *ifname)
                         }
 
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
-                            target->torque = (int16) 30; //G-TWI 25/100EE
+                            //gettimeofday(&now, NULL);
+                            //G-TWI 25/100EE
+                            if(target->torque < 30)
+                            target->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
+
+                            else
+                            target->torque = (int16) 30;
                         }
+                        //fprintf(fp1, "%d, %ld%06lu,\n", target->torque, now.tv_sec, now.tv_usec);
 
                         if((val2->status & 0x0fff) == 0x0237 && reachedInitial2){
-                            target2->torque = (int16) 80; //G-TWI 6/100EE
-                        }
+                            //gettimeofday(&now, NULL);
+                            //G-TWI 6/100EE
+                            if(target2->torque < 80)
+                            target2->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
 
-                        printf("  Target: %8d, control: 0x%x\n", target->torque, target->status);
-                        printf("  Target: %8d, control: 0x%x\n\n", target2->torque, target2->status);
+                            else
+                            target2->torque = (int16) 80;
+                        }
+                        //fprintf(fp3, "%d,%ld%06lu,\n", target2->torque, now.tv_sec, now.tv_usec);
+
+                        printf(" motor1, Target: %8d, control: 0x%x\n", target->torque, target->status);
+                        printf(" motor2, Target: %8d, control: 0x%x\n\n", target2->torque, target2->status);
 
                         printf("\r");
                         needlf = TRUE;
@@ -322,6 +369,10 @@ void simpletest(char *ifname)
                     usleep(timestep);
                 }
                 inOP = FALSE;
+                //fclose(fp1);
+                //fclose(fp2);
+                //fclose(fp3);
+                //fclose(fp4);
             }
             else
             {

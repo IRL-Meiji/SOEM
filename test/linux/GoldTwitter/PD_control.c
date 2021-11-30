@@ -22,13 +22,20 @@
 // PDO data capacity
 char IOmap[4096];
 
-/* G-TWI 6/100EE */
-float kp = 12.0;
+/* G-TWI 6/100EE , link only*/
+//float kp = 12.0;
+//float kd = 0.1;
+/* G-TWI 25/100EE , link only*/
+float kp = 6.0;
 float kd = 0.1;
+/* 500g */
+//float kp = 20.0;
+//float kd = 0.1;
 float t_pos = 0;
 float t_vel = 0;
 float A = 250.0; //振幅、90°
-float T = 2.0; //周期
+float T = 1.0; //周期
+
 
 pthread_t thread1;
 int expectedWKC;
@@ -192,7 +199,7 @@ void simpletest(char *ifname)
             printf("Slaves mapped, state to SAFE_OP.\n");
 
             // 制御周期, 1ms
-            int timestep = 1000;
+            int timestep = 500;
 
             /* wait for all slaves to reach SAFE_OP state */
             ec_statecheck(0, EC_STATE_SAFE_OP,  EC_TIMEOUTSTATE * 4);
@@ -277,11 +284,12 @@ void simpletest(char *ifname)
                 val = (struct Input *)(ec_slave[1].inputs);
 
                 /* make csv file */
+                
                 FILE *fp1 = fopen("PD_receive.csv", "w");
-                fprintf(fp1, "pos,vel,time[μs]\n");
+                fprintf(fp1, "pos,vel,receive time[μs]\n");
 
                 FILE *fp2 = fopen("PD_send.csv", "w");
-                fprintf(fp2, "pos,vel,time[μs]\n");
+                fprintf(fp2, "pos,vel,send time[μs]\n");
 
                 /* time declaration */
                 struct timeval now;
@@ -293,7 +301,7 @@ void simpletest(char *ifname)
                 int j = 0;
                 float w = 2*PI/T; //角速度
 
-                for(i = 1; i <= 5000; i++) 
+                for(i = 1; i <= 20000; i++) 
                 //for(;;)
                 {
 
@@ -309,6 +317,7 @@ void simpletest(char *ifname)
 
                         /* show time */
                         printf("Processdata cycle %4d, WKC %d\n", i, wkc);
+                        gettimeofday(&now, NULL); // get time
 
                         /* 最初だけslaveinfoの入出力を順番通り表示させたら、表示もマッピングに対応する（表示させたくないものを消せる） */
                         /* torque version */
@@ -320,9 +329,11 @@ void simpletest(char *ifname)
                         /* save digital value */
                         //fprintf(fp1, "%d,%d,%ld%06lu,\n", val->position, val->velocity, now.tv_sec, now.tv_usec);
                         /* save digital value */
+                        
                         float p = DA(val->position);
                         float v = DA(val->velocity);
                         fprintf(fp1, "%f,%f,%ld%06lu,\n", p, v, now.tv_sec, now.tv_usec);
+                        printf("%f\n", p);
 
                         /** if in fault or in the way to normal status, we update the state machine */
                         // slave 1
@@ -362,7 +373,7 @@ void simpletest(char *ifname)
                             target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));*/
 
                             /* PD control (平均のループ時間をマイクロ秒単位でcurrent_timeに加算) */
-                            j = j + 1300;
+                            j = j + 900;
                             t_pos = A-A*cos(w*j*0.000001);
                             t_vel = w*A*sin(w*j*0.000001);
                             target->torque = (int16) (kp*(t_pos - val->position) + kd*(t_vel - val->velocity));
