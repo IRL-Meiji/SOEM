@@ -305,18 +305,15 @@ void simpletest(char *ifname)
                         
                         
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
-                            /*if(i<150)
-                                target->torque = (int16) 50;
-                            else    
-                                target->torque = (int16) 30; //G-TWI 6/100EE*/
+                            //G-TWI 6/100EE*/
 
                             //gettimeofday(&now, NULL);
 
-                            if(target->torque < 800)
+                            if(target->torque < 80)
                             target->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
 
                             //else
-                            target->torque = (int16) 800;
+                            target->torque = (int16) 80;
 
 
                         }
