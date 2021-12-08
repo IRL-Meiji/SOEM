@@ -341,11 +341,11 @@ void simpletest(char *ifname)
                         if((val->status & 0x0fff) == 0x0237 && reachedInitial){
                             //gettimeofday(&now, NULL);
                             //G-TWI 25/100EE
-                            if(target->torque < 30)
-                            target->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
+                            if(target->torque < 22)
+                            target->torque = (int16) i ; // 11回ループが回ってから指令が送信される
 
                             else
-                            target->torque = (int16) 30;
+                            target->torque = (int16) 22;
                         }
                         //fprintf(fp1, "%d, %ld%06lu,\n", target->torque, now.tv_sec, now.tv_usec);
 
@@ -353,7 +353,7 @@ void simpletest(char *ifname)
                             //gettimeofday(&now, NULL);
                             //G-TWI 6/100EE
                             if(target2->torque < 80)
-                            target2->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
+                            target2->torque = (int16) i ; // 11回ループが回ってから指令が送信される
 
                             else
                             target2->torque = (int16) 80;

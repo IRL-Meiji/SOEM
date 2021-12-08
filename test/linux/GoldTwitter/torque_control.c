@@ -309,11 +309,11 @@ void simpletest(char *ifname)
 
                             //gettimeofday(&now, NULL);
 
-                            if(target->torque < 80)
-                            target->torque = (int16) (i)*1 ; // 11回ループが回ってから指令が送信される
+                            if(target->torque < 22)
+                            target->torque = (int16) i ; 
 
                             //else
-                            target->torque = (int16) 80;
+                            target->torque = (int16) 22;
 
 
                         }

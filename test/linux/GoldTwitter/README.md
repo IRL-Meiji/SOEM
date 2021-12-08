@@ -5,10 +5,10 @@
 # プログラム一覧
 - read_motor.c : モータの情報を読み取り、端末に表示するプログラム
 - torque_control.c : 実際にトルク指令を送信して動かし、データをcsvファイルに保存するプログラム
-- test_program.c : テスト用のプログラム(現在はだんだんトルクをあげたり、要求トルクを取得したりしている)
+- test_program.c : テスト用のプログラム（現在はトルクの要求値（指令値とは違う）をcsvファイルに保存するプログラム）
 - PD_control.c : トルクベースでPD制御するプログラム
 - dualmotor_read.c : モータ２つを読み取る、トルク指令を送信するプログラム
 
 # その他
 - math.hをincludeするときは、CMakeLists.txtのtarget_link_libraries(プログラム名 soem)をtarget_link_libraries(プログラム名 soem m)にする
-- トルク指令を与える場合のデジタル値は、G-TWI 6/100EEでは80、G-TWI 25/100EEでは30が安全
+- トルク指令を与える場合のデジタル値は、G-TWI 6/100EEでは80、G-TWI 25/100EEでは22が安全
