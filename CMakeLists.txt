@@ -115,5 +115,6 @@ if(BUILD_TESTS)
   add_subdirectory(test/linux/GoldTwitter_transmit)
   add_subdirectory(test/linux/GoldWhistle_example)
   add_subdirectory(test/linux/GoldTwitter)
+  add_subdirectory(test/linux/Impedance_control)
 
 endif()

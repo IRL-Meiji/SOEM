@@ -11,4 +11,4 @@
 
 # その他
 - math.hをincludeするときは、CMakeLists.txtのtarget_link_libraries(プログラム名 soem)をtarget_link_libraries(プログラム名 soem m)にする
-- トルク指令を与える場合のデジタル値は、G-TWI 6/100EEでは80、G-TWI 25/100EEでは30が安全
+- トルク指令を与える場合のデジタル値は、G-TWI 6/100EEでは80、G-TWI 25/100EEでは18が安全
