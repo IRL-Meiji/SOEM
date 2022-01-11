@@ -22,3 +22,4 @@ install(TARGETS PD_control DESTINATION bin)
 add_executable(dualmotor_read dualmotor_read.c)
 target_link_libraries(dualmotor_read soem)
 install(TARGETS dualmotor_read DESTINATION bin)
+
